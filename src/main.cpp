@@ -20,14 +20,12 @@ constexpr int outputProtectionTop = 245;
 constexpr int relaySwitchDelay = 225;
 
 static uint8_t relayMode;
-static bool protection = true;
 
 
 int readVoltage(uint8_t pin);
 void setRelayMode(uint8_t mode);
 void toggleOutputRelay(uint8_t state);
 bool isOutputVoltageSafe();
-void enableProtection();
 
 void setup()
 {
@@ -46,13 +44,13 @@ void setup()
 
 void loop()
 {
+    static bool isOutputAllowed = true;
+
     int inputVoltage = readVoltage(inputVoltPin) - 140;
 
-    if (inputVoltage < 0 || inputVoltage > 119) enableProtection();
+    if (inputVoltage < 0 || inputVoltage > 119) isOutputAllowed = false;
     else
     {
-        digitalWrite(protectionLedPin, LOW);
-
         if ((inputVoltage + jumpProtectionBoundary) / 20 != relayMode &&
             (inputVoltage - jumpProtectionBoundary) / 20 != relayMode)
         {
@@ -60,20 +58,18 @@ void loop()
             setRelayMode(inputVoltage / 20);
         }
 
-        if (protection && digitalRead(delayButtonPin))
+        if (!isOutputAllowed && digitalRead(delayButtonPin))
         {
             digitalWrite(delayLedPin, HIGH);
             delay(delayTimeout);
             digitalWrite(delayLedPin, LOW);
         }
         
-        if (!isOutputVoltageSafe()) enableProtection();
-        else
-        {
-            toggleOutputRelay(HIGH);
-            protection = false;
-        }
+        isOutputAllowed = isOutputVoltageSafe();
     }
+
+    toggleOutputRelay(isOutputAllowed);
+    digitalWrite(protectionLedPin, !isOutputAllowed);
 }
 
 void setRelayMode(uint8_t mode)
@@ -92,13 +88,6 @@ void toggleOutputRelay(uint8_t state)
 {
     digitalWrite(outputRelay, state);
     delay(relaySwitchDelay);
-}
-
-void enableProtection()
-{
-    toggleOutputRelay(LOW);
-    digitalWrite(protectionLedPin, HIGH);
-    protection = true;
 }
 
 bool isOutputVoltageSafe()
