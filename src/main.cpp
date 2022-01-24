@@ -12,9 +12,9 @@ constexpr uint8_t outputRelay = 9;
 constexpr uint8_t modesMap[6] = { 0, 1, 4, 5, 2, 3 };
 
 constexpr unsigned long delayTimeout = 10000;
-constexpr int jumpProtectionBoundary = 4;
-constexpr int outputProtectionBottom = 220 - jumpProtectionBoundary - 5;
-constexpr int outputProtectionTop = 240 + jumpProtectionBoundary + 5;
+constexpr int jumpProtectionBoundary = 3;
+constexpr int outputProtectionBottom = 210;
+constexpr int outputProtectionTop = 250;
 constexpr int relaySwitchDelay = 50;
 
 static uint8_t relayMode;
@@ -42,9 +42,10 @@ void loop()
 {
     static bool isOutputAllowed = false;
 
-    int inputVoltage = readVoltage(inputVoltPin) - 140;
+    int inputVoltage = readVoltage(inputVoltPin);
+    int outputVoltage = readVoltage(outputVoltPin);
 
-    if (inputVoltage < 0 || inputVoltage > 119) isOutputAllowed = false;
+    if (inputVoltage < 140 || inputVoltage > 259) isOutputAllowed = false;
     else
     {
         if (!isOutputAllowed && digitalRead(delayButtonPin))
@@ -54,10 +55,10 @@ void loop()
             digitalWrite(delayLedPin, LOW);
         }
 
-        if ((inputVoltage + jumpProtectionBoundary) / 20 != relayMode &&
-            (inputVoltage - jumpProtectionBoundary) / 20 != relayMode)
+        if (outputVoltage > 240 + jumpProtectionBoundary ||
+            outputVoltage < 220 - jumpProtectionBoundary)
         {
-            setRelayMode(inputVoltage / 20);
+            setRelayMode((inputVoltage - 140) / 20);
         }
         
         isOutputAllowed = isOutputVoltageSafe();
@@ -109,7 +110,7 @@ int readVoltage(uint8_t pin)
     for (int j = 0; j < 3; ++j)
     {
         int amplitude = 0;
-        for (int i = 0; i < 180; ++i)
+        for (int i = 0; i < 190; ++i)
         {
             int newRead = analogRead(pin);
             if (newRead > amplitude) amplitude = newRead;
