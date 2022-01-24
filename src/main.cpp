@@ -13,8 +13,8 @@ constexpr uint8_t modesMap[6] = { 0, 1, 4, 5, 2, 3 };
 
 constexpr unsigned long delayTimeout = 10000;
 constexpr int jumpProtectionBoundary = 4;
-constexpr int outputProtectionBottom = 220 - jumpProtectionBoundary - 2;
-constexpr int outputProtectionTop = 240 + jumpProtectionBoundary + 2;
+constexpr int outputProtectionBottom = 220 - jumpProtectionBoundary - 5;
+constexpr int outputProtectionTop = 240 + jumpProtectionBoundary + 5;
 constexpr int relaySwitchDelay = 50;
 
 static uint8_t relayMode;
@@ -34,8 +34,6 @@ void setup()
     
     pinMode(powerGridConnectionLedPin, OUTPUT);
     digitalWrite(powerGridConnectionLedPin, HIGH);
-
-    // Serial.begin(9600);
 
     setRelayMode(4);
 }
