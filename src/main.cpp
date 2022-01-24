@@ -4,7 +4,7 @@ constexpr uint8_t inputVoltPin = A1;
 constexpr uint8_t outputVoltPin = A2;
 constexpr uint8_t delayButtonPin = 5;
 constexpr uint8_t delayLedPin = 6;
-constexpr uint8_t networkConnectionLedPin = 7;
+constexpr uint8_t powerGridConnectionLedPin = 7;
 constexpr uint8_t protectionLedPin = 13;
 
 constexpr uint8_t relays[3] = { 10, 11, 12 };
@@ -12,10 +12,10 @@ constexpr uint8_t outputRelay = 9;
 constexpr uint8_t modesMap[6] = { 0, 1, 4, 5, 2, 3 };
 
 constexpr unsigned long delayTimeout = 10000;
-constexpr int jumpProtectionBoundary = 3;
-constexpr int outputProtectionBottom = 220 - jumpProtectionBoundary;
-constexpr int outputProtectionTop = 240 + jumpProtectionBoundary;
-constexpr int relaySwitchDelay = 150;
+constexpr int jumpProtectionBoundary = 4;
+constexpr int outputProtectionBottom = 220 - jumpProtectionBoundary - 2;
+constexpr int outputProtectionTop = 240 + jumpProtectionBoundary + 2;
+constexpr int relaySwitchDelay = 50;
 
 static uint8_t relayMode;
 
@@ -32,8 +32,10 @@ void setup()
     pinMode(protectionLedPin, OUTPUT);
     pinMode(delayLedPin, OUTPUT);
     
-    pinMode(networkConnectionLedPin, OUTPUT);
-    digitalWrite(networkConnectionLedPin, HIGH);
+    pinMode(powerGridConnectionLedPin, OUTPUT);
+    digitalWrite(powerGridConnectionLedPin, HIGH);
+
+    // Serial.begin(9600);
 
     setRelayMode(4);
 }
