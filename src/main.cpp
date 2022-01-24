@@ -40,25 +40,24 @@ void setup()
 
 void loop()
 {
-    static bool isOutputAllowed = true;
+    static bool isOutputAllowed = false;
 
     int inputVoltage = readVoltage(inputVoltPin) - 140;
 
     if (inputVoltage < 0 || inputVoltage > 119) isOutputAllowed = false;
     else
     {
-        if ((inputVoltage + jumpProtectionBoundary) / 20 != relayMode &&
-            (inputVoltage - jumpProtectionBoundary) / 20 != relayMode)
-        {
-            toggleOutputRelay(LOW);
-            setRelayMode(inputVoltage / 20);
-        }
-
         if (!isOutputAllowed && digitalRead(delayButtonPin))
         {
             digitalWrite(delayLedPin, HIGH);
             delay(delayTimeout);
             digitalWrite(delayLedPin, LOW);
+        }
+
+        if ((inputVoltage + jumpProtectionBoundary) / 20 != relayMode &&
+            (inputVoltage - jumpProtectionBoundary) / 20 != relayMode)
+        {
+            setRelayMode(inputVoltage / 20);
         }
         
         isOutputAllowed = isOutputVoltageSafe();
@@ -66,12 +65,6 @@ void loop()
 
     toggleOutputRelay(isOutputAllowed);
     digitalWrite(protectionLedPin, !isOutputAllowed);
-}
-
-void decomposeRelayMode(uint8_t mode, uint8_t* output)
-{
-    for (int i = 2; i > -1; --i, mode >>= 1)
-        output[i] = mode & 1;
 }
 
 void relaysDigitalWrite(uint8_t* targetPositions, bool (*predicate)(uint8_t))
@@ -87,13 +80,15 @@ void relaysDigitalWrite(uint8_t* targetPositions, bool (*predicate)(uint8_t))
 
 void setRelayMode(uint8_t mode)
 {
+    relayMode = mode;
+
     uint8_t targetPositions[3];
-    decomposeRelayMode(modesMap[mode], targetPositions);
+    mode = modesMap[mode];
+    for (int i = 2; i > -1; --i, mode >>= 1)
+        targetPositions[i] = mode & 1;
 
     relaysDigitalWrite(targetPositions, [](uint8_t pos) { return pos == 1; });
     relaysDigitalWrite(targetPositions, [](uint8_t pos) { return pos == 0; });
-
-    relayMode = mode;
 }
 
 void toggleOutputRelay(uint8_t state)
@@ -105,7 +100,7 @@ void toggleOutputRelay(uint8_t state)
 bool isOutputVoltageSafe()
 {
     int outputVoltage = readVoltage(outputVoltPin);
-    return outputVoltage < outputProtectionBottom || outputVoltage > outputProtectionTop;
+    return outputVoltage >= outputProtectionBottom && outputVoltage <= outputProtectionTop;
 }
 
 int readVoltage(uint8_t pin)
