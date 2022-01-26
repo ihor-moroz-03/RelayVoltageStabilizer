@@ -2,9 +2,9 @@
 
 constexpr uint8_t inputVoltPin = A1;
 constexpr uint8_t outputVoltPin = A2;
-constexpr uint8_t delayButtonPin = 5;
-constexpr uint8_t delayLedPin = 6;
-constexpr uint8_t powerGridConnectionLedPin = 7;
+constexpr uint8_t delayButtonPin = A0;
+constexpr uint8_t delayLedPin = 5;
+constexpr uint8_t powerGridConnectionLedPin = 4;
 constexpr uint8_t protectionLedPin = 13;
 
 constexpr uint8_t relays[3] = { 10, 11, 12 };
@@ -13,8 +13,8 @@ constexpr uint8_t modesMap[6] = { 0, 1, 4, 5, 2, 3 };
 
 constexpr unsigned long delayTimeout = 10000;
 constexpr int jumpProtectionBoundary = 3;
-constexpr int outputProtectionBottom = 210;
-constexpr int outputProtectionTop = 250;
+// constexpr int outputProtectionBottom = 212;
+constexpr int outputProtectionTop = 248;
 constexpr int relaySwitchDelay = 50;
 
 static uint8_t relayMode;
@@ -24,6 +24,7 @@ int readVoltage(uint8_t pin);
 void setRelayMode(uint8_t mode);
 void toggleOutputRelay(uint8_t state);
 bool isOutputVoltageSafe();
+bool delayButtonPseudoDigitalRead();
 
 void setup()
 {
@@ -45,10 +46,9 @@ void loop()
     int inputVoltage = readVoltage(inputVoltPin);
     int outputVoltage = readVoltage(outputVoltPin);
 
-    if (inputVoltage < 140 || inputVoltage > 259) isOutputAllowed = false;
-    else
+    if (inputVoltage < 259)
     {
-        if (!isOutputAllowed && digitalRead(delayButtonPin))
+        if (!isOutputAllowed && delayButtonPseudoDigitalRead())
         {
             digitalWrite(delayLedPin, HIGH);
             delay(delayTimeout);
@@ -58,14 +58,23 @@ void loop()
         if (outputVoltage > 240 + jumpProtectionBoundary ||
             outputVoltage < 220 - jumpProtectionBoundary)
         {
-            setRelayMode((inputVoltage - 140) / 20);
+            inputVoltage -= 140;
+            setRelayMode((inputVoltage < 0 ? 0 : inputVoltage) / 20);
         }
         
         isOutputAllowed = isOutputVoltageSafe();
     }
+    else isOutputAllowed = false;
 
     toggleOutputRelay(isOutputAllowed);
     digitalWrite(protectionLedPin, !isOutputAllowed);
+}
+
+// using this because button signal is around 2.2V
+// it's not recognised as HIGH with digitalRead()
+bool delayButtonPseudoDigitalRead()
+{
+    return analogRead(delayButtonPin) > 350;
 }
 
 void relaysDigitalWrite(uint8_t* targetPositions, bool (*predicate)(uint8_t))
@@ -101,7 +110,7 @@ void toggleOutputRelay(uint8_t state)
 bool isOutputVoltageSafe()
 {
     int outputVoltage = readVoltage(outputVoltPin);
-    return outputVoltage >= outputProtectionBottom && outputVoltage <= outputProtectionTop;
+    return outputVoltage / 3 <= outputProtectionTop / 3;
 }
 
 int readVoltage(uint8_t pin)
